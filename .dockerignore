@@ -1,0 +1,12 @@
+# Ignore container files from workspace context
+podman/
+.git/
+.gitignore
+.dockerignore
+
+# Claude Code settings (handled by mount)
+.claude/
+
+# Temporary files  
+*.tmp
+*.temp

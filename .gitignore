@@ -1,0 +1,6 @@
+# Claude Code settings directory (should not be in workspace)
+.claude/
+
+# Temporary files
+*.tmp
+*.temp

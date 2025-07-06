@@ -1,0 +1,45 @@
+{
+	"numStartups": 1,
+	"installMethod": "unknown",
+	"autoUpdates": true,
+	"tipsHistory": {
+		"new-user-warmup": 1
+	},
+	"userID": "",
+	"projects": {
+		"/home/$USER_NAME/dev": {
+			"allowedTools": [],
+			"history": [],
+			"mcpContextUris": [],
+			"mcpServers": {},
+			"enabledMcpjsonServers": [],
+			"disabledMcpjsonServers": [],
+			"hasTrustDialogAccepted": true,
+			"projectOnboardingSeenCount": 1,
+			"hasClaudeMdExternalIncludesApproved": false,
+			"hasClaudeMdExternalIncludesWarningShown": false
+		}
+	},
+	"oauthAccount": {
+	},
+	"hasCompletedOnboarding": true,
+	"mcpServers": {
+    "context7": {
+      "type": "sse",
+      "url": "https://mcp.context7.com/sse"
+    },
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "headers": {
+        "Authorization": "Bearer YOUR_GITHUB_TOKEN_HERE"
+      }
+    },
+		"playwright": {
+			"command": "npx",
+			"args": [
+				"@playwright/mcp@latest"
+			]
+		}
+  }
+}
