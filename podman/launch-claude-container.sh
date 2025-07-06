@@ -7,17 +7,29 @@ set -e
 
 # Parse command line arguments
 MESSAGE=""
+NO_CACHE=false
+PERMISSION_MODE=""
 while [[ $# -gt 0 ]]; do
     case $1 in
         -m|--message)
             MESSAGE="$2"
             shift 2
             ;;
+        --no-cache)
+            NO_CACHE=true
+            shift
+            ;;
+        --permission-mode)
+            PERMISSION_MODE="$2"
+            shift 2
+            ;;
         -h|--help)
             echo "Usage: $0 [options]"
             echo "Options:"
-            echo "  -m, --message MESSAGE    Run 'claude -p MESSAGE' after container starts"
-            echo "  -h, --help              Show this help message"
+            echo "  -m, --message MESSAGE           Run 'claude -p MESSAGE' after container starts"
+            echo "  --no-cache                      Force rebuild of container image"
+            echo "  --permission-mode MODE          Set permission mode (default, acceptEdits, plan, bypassPermissions)"
+            echo "  -h, --help                     Show this help message"
             exit 0
             ;;
         *)
@@ -89,14 +101,14 @@ else
     exit 1
 fi
 
-# Build the image if it doesn't exist or if Dockerfile is newer
-if ! podman image exists "$IMAGE_NAME" || [ "$DOCKERFILE" -nt "$(podman image inspect $IMAGE_NAME --format '{{.Created}}' 2>/dev/null || echo '1970-01-01')" ]; then
+# Build the image if it doesn't exist, if Dockerfile is newer, or if --no-cache is specified
+if [ "$NO_CACHE" = true ] || ! podman image exists "$IMAGE_NAME" || [ "$DOCKERFILE" -nt "$(podman image inspect $IMAGE_NAME --format '{{.Created}}' 2>/dev/null || echo '1970-01-01')" ]; then
     echo -e "${GREEN}Building Claude Code Ubuntu image...${NC}"
-    podman build -f "$DOCKERFILE" \
-	    --build-arg USER_ID=$USER_UID \
-	    --build-arg GROUP_ID=$USER_GID \
-	    --build-arg USER_NAME=$USER_NAME \
-	    -t "$IMAGE_NAME" "$SCRIPT_DIR"
+    BUILD_ARGS="--build-arg USER_ID=$USER_UID --build-arg GROUP_ID=$USER_GID --build-arg USER_NAME=$USER_NAME -t $IMAGE_NAME"
+    if [ "$NO_CACHE" = true ]; then
+        BUILD_ARGS="$BUILD_ARGS --no-cache"
+    fi
+    podman build -f "$DOCKERFILE" $BUILD_ARGS "$SCRIPT_DIR"
 fi
 
 # Clean up temporary files
@@ -120,7 +132,14 @@ echo ""
 
 # Run the container
 if [ -n "$MESSAGE" ]; then
-    echo -e "${BLUE}Running claude -p \"$MESSAGE\" after container starts...${NC}"
+    CLAUDE_CMD="claude"
+    if [ -n "$PERMISSION_MODE" ]; then
+        CLAUDE_CMD="$CLAUDE_CMD --permission-mode $PERMISSION_MODE"
+    else
+        CLAUDE_CMD="$CLAUDE_CMD --dangerously-skip-permissions"
+    fi
+    CLAUDE_CMD="$CLAUDE_CMD -p \"$MESSAGE\" --output-format stream-json --verbose"
+    echo -e "${BLUE}Running $CLAUDE_CMD after container starts...${NC}"
     podman run -it \
         --name "$CONTAINER_NAME" \
         --hostname claude-dev \
@@ -128,7 +147,7 @@ if [ -n "$MESSAGE" ]; then
         --volume "$CWD:/home/$USER_NAME/dev:Z" \
         --userns=keep-id \
         "$IMAGE_NAME" \
-        bash -c "claude -p --dangerously-skip-permissions \"$MESSAGE\""
+        bash -c "$CLAUDE_CMD"
 else
     podman run -it \
         --name "$CONTAINER_NAME" \
