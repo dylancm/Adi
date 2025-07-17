@@ -4,3 +4,13 @@
 # Temporary files
 *.tmp
 *.temp
+
+# vscode settings
+.vscode/
+*.code-workspace
+
+# Ignore all files in the specs directory
+specs/*
+specs
+
+.env
