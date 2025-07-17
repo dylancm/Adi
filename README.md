@@ -1,6 +1,8 @@
-# Claude Code Container Setup
+# Claude Code Container Setup & Architect CLI
 
 A pre-configured Podman container with Claude Code installed and ready to use, providing a consistent development environment with Ubuntu, Node.js, and Claude Code pre-installed.
+
+This repository also includes the **Architect CLI Tool** - a simple CLI tool that generates technical design documents using the Anthropic API.
 
 ## Why Use This Container?
 
@@ -195,6 +197,178 @@ The container mounts your current working directory, so you can use it with any 
 cd /path/to/your/project
 /path/to/claude-container/podman/launch-claude-container.sh
 ```
+
+---
+
+# Architect CLI Tool
+
+A simple CLI tool that generates technical design documents using the Anthropic API.
+
+## Features
+
+- Generate technical design documents from feature descriptions
+- Optional technical context and existing markdown file integration
+- Automatic slug generation using AI
+- Support for both environment variables and CLI options for API key
+- Outputs structured markdown files for architecture planning and technical design
+
+## Installation
+
+1. Install dependencies:
+```bash
+uv add anthropic
+```
+
+2. Make the script executable:
+```bash
+chmod +x architect.py
+```
+
+## Usage
+
+### Basic Usage
+
+```bash
+./architect.py -f "user authentication system with dashboard"
+```
+
+### With API Key
+
+```bash
+# Using environment variable (recommended)
+export ANTHROPIC_API_KEY="your-api-key-here"
+./architect.py -f "user authentication system with dashboard"
+
+# Using CLI option
+./architect.py -f "user authentication system with dashboard" -k "your-api-key-here"
+```
+
+### With Technical Context
+
+```bash
+./architect.py -f "user authentication system" -c "Python Flask app with PostgreSQL database"
+```
+
+### With Existing Markdown Files
+
+```bash
+./architect.py -f "user authentication system" -c "Python Flask app" -e existing_design.md requirements.md
+```
+
+### Using File Inputs
+
+```bash
+# Features from file
+./architect.py -f features.md -c "Python Flask app"
+
+# Context from file
+./architect.py -f "user auth system" -c technical_context.md
+
+# Multiple existing files
+./architect.py -f features.md -c context.md -e design1.md design2.md
+```
+
+## Command Line Options
+
+- `-f, --features` (required): Feature descriptions (string or path to .md file)
+- `-c, --context` (optional): Technical context (multiline string or path to .md file)
+- `-e, --existing` (optional): Existing markdown files to include (multiple file paths)
+- `-k, --api-key` (optional): Anthropic API key (overrides ANTHROPIC_API_KEY env var)
+
+## Output Files
+
+The tool generates the following files in the `specs/` directory:
+
+1. `specs/{slug}_architecture_planning.md` - Contains the architecture planning content
+2. `specs/{slug}_technical_design.md` - Contains the complete technical design document
+3. `specs/updated_{filename}.md` - Updated versions of any existing markdown files (if provided)
+
+Where `{slug}` is an AI-generated 1-3 word identifier for your system. The `specs/` directory is automatically created if it doesn't exist.
+
+## Examples
+
+### Example 1: E-commerce System
+```bash
+./architect.py -f "e-commerce platform with shopping cart, user accounts, and payment processing"
+```
+
+Output files:
+- `specs/ecommerce_platform_architecture_planning.md`
+- `specs/ecommerce_platform_technical_design.md`
+
+### Example 2: With Context and Existing Files
+```bash
+./architect.py -f "blog management system" -c "Node.js with Express and MongoDB" -e current_api.md
+```
+
+Output files:
+- `specs/blog_management_architecture_planning.md`
+- `specs/blog_management_technical_design.md`
+- `specs/updated_current_api.md`
+
+### Example 3: Using File Inputs
+```bash
+# Create a features file
+echo "User authentication system with OAuth2 support" > features.md
+
+# Create a context file
+echo "Python FastAPI application with PostgreSQL database and Redis cache" > context.md
+
+# Run the tool
+./architect.py -f features.md -c context.md
+```
+
+## Error Handling
+
+The tool provides clear error messages for common issues:
+
+- Missing API key
+- Invalid file paths
+- Network/API errors
+- Invalid input formats
+
+## API Key Management
+
+The tool supports two methods for providing your Anthropic API key:
+
+1. **Environment Variable** (recommended):
+   ```bash
+   export ANTHROPIC_API_KEY="your-api-key-here"
+   ```
+
+2. **CLI Option**:
+   ```bash
+   ./architect.py -f "features" -k "your-api-key-here"
+   ```
+
+The CLI option takes precedence over the environment variable.
+
+## Model Usage
+
+- **Slug Generation**: Uses `claude-3-5-haiku-latest` (fast, cost-effective)
+- **Technical Design**: Uses `claude-3-opus-20240229` (comprehensive, high-quality)
+
+## Requirements
+
+- Python 3.7+
+- `anthropic` Python package
+- Valid Anthropic API key
+
+## Troubleshooting
+
+### Common Issues
+
+1. **"No API key provided"**: Set the `ANTHROPIC_API_KEY` environment variable or use the `-k` option
+2. **"File not found"**: Verify file paths are correct and files exist
+3. **"API Error"**: Check your API key is valid and you have sufficient credits
+
+### Getting Help
+
+```bash
+./architect.py -h
+```
+
+---
 
 ## Contributing
 
