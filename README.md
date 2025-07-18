@@ -1,6 +1,6 @@
 # Claude Code Container Setup & Architect CLI
 
-A pre-configured Podman container with Claude Code installed and ready to use, providing a consistent development environment with Ubuntu, Node.js, and Claude Code pre-installed.
+A pre-configured Podman container with Claude Code installed and ready to use, providing a consistent development environment with Ubuntu, Node.js, and Claude Code pre-installed. Now includes both the original Python launcher script and a standalone deployable version.
 
 This repository also includes the **Architect CLI Tool** - a simple CLI tool that generates technical design documents using the Anthropic API.
 
@@ -16,8 +16,9 @@ This repository also includes the **Architect CLI Tool** - a simple CLI tool tha
 ## Prerequisites
 
 - **Podman**: Ensure Podman is installed and running
+- **Python 3.8+**: Required for the launch script
+- **uv**: Python package manager (`pip install uv` or see [uv installation docs](https://docs.astral.sh/uv/getting-started/installation/))
 - **Git Repository**: Must be run from within a git repository for worktree functionality
-- **jq**: Required for configuration merging (`apt install jq` on Ubuntu/Debian)
 - **Permissions**: Make sure the launch script is executable
 
 ## Quick Start
@@ -33,11 +34,11 @@ This repository also includes the **Architect CLI Tool** - a simple CLI tool tha
 
 2. **Run the container:**
    ```bash
-   # Using the original script (requires the podman/ directory)
-   ./podman/launch-claude-container.sh
+   # Using the original Python script (requires the podman/ directory)
+   ./podman/launch-claude-container.py
    
    # OR using the standalone script (single file deployment)
-   ./launch-claude-container-standalone.sh
+   ./launch-claude-container-standalone.py
    ```
 
 3. **Inside the container, start Claude Code:**
@@ -47,9 +48,9 @@ This repository also includes the **Architect CLI Tool** - a simple CLI tool tha
 
 4. **Or run with a direct message:**
    ```bash
-   ./podman/launch-claude-container.sh -m "your message here"
+   ./podman/launch-claude-container.py -m "your message here"
    # OR with standalone script
-   ./launch-claude-container-standalone.sh -m "your message here"
+   ./launch-claude-container-standalone.py -m "your message here"
    ```
 
 ## Authentication Details
@@ -59,7 +60,7 @@ The container supports multiple authentication methods with automatic credential
 1. **Environment variable (recommended):**
    ```bash
    export ANTHROPIC_API_KEY="your-api-key"
-   ./podman/launch-claude-container.sh
+   ./podman/launch-claude-container.py
    ```
 
 2. **Host credentials:** If you've already run `claude auth` on your host, credentials will be automatically copied and merged.
@@ -91,10 +92,11 @@ The container supports multiple authentication methods with automatic credential
 ```
 ├── podman/
 │   ├── claude-code-ubuntu.dockerfile    # Container definition
-│   ├── launch-claude-container.sh       # Launch script with config merge
+│   ├── launch-claude-container.py       # Python launch script with config merge
 │   └── claude.template.json             # Default container settings
 ├── Makefile                             # Build system for standalone script
-├── launch-claude-container-standalone.sh # Single deployable script (generated)
+├── build_standalone.py                  # Helper script for building standalone version
+├── launch-claude-container-standalone.py # Single deployable script (generated)
 ├── CLAUDE.md                            # Project guidance for Claude Code
 └── README.md                            # This file
 ```
@@ -126,37 +128,37 @@ The container now supports git worktree functionality for isolated development:
 
 ```bash
 # Basic usage - launches interactive Claude Code session with automatic worktree
-./podman/launch-claude-container.sh
+./podman/launch-claude-container.py
 
 # Run with direct message - execute single command and exit
-./podman/launch-claude-container.sh -m "your message here"
+./podman/launch-claude-container.py -m "your message here"
 
 # Create worktree from specific branch
-./podman/launch-claude-container.sh --worktree-branch feature/new-feature
+./podman/launch-claude-container.py --worktree-branch feature/new-feature
 
 # Mount current directory instead of creating worktree
-./podman/launch-claude-container.sh --no-worktree
+./podman/launch-claude-container.py --no-worktree
 
 # Keep worktree after container stops (for persistent development)
-./podman/launch-claude-container.sh --keep-worktree
+./podman/launch-claude-container.py --keep-worktree
 
 # Use existing worktree at specific path
-./podman/launch-claude-container.sh --worktree-path /tmp/my-existing-worktree
+./podman/launch-claude-container.py --worktree-path /tmp/my-existing-worktree
 
 # Force rebuild of container image (ignores cache)
-./podman/launch-claude-container.sh --no-cache
+./podman/launch-claude-container.py --no-cache
 
 # Set permission mode for Claude Code execution
-./podman/launch-claude-container.sh --permission-mode plan -m "your message"
+./podman/launch-claude-container.py --permission-mode plan -m "your message"
 
 # Show help and usage information
-./podman/launch-claude-container.sh -h
+./podman/launch-claude-container.py -h
 
 # Examples
-./podman/launch-claude-container.sh -m "List all Python files in this directory"
-./podman/launch-claude-container.sh --worktree-branch main -m "Run the tests and show me the results"
-./podman/launch-claude-container.sh --permission-mode acceptEdits --keep-worktree -m "Fix the linting errors"
-./podman/launch-claude-container.sh --no-worktree --no-cache -m "Analyze this codebase"
+./podman/launch-claude-container.py -m "List all Python files in this directory"
+./podman/launch-claude-container.py --worktree-branch main -m "Run the tests and show me the results"
+./podman/launch-claude-container.py --permission-mode acceptEdits --keep-worktree -m "Fix the linting errors"
+./podman/launch-claude-container.py --no-worktree --no-cache -m "Analyze this codebase"
 ```
 
 ### Available Options
@@ -181,9 +183,9 @@ The container now supports git worktree functionality for isolated development:
 
 ### Common Issues
 - **Authentication errors:** Ensure `ANTHROPIC_API_KEY` is set or `~/.claude/.credentials.json` exists
-- **Permission issues:** Verify launch script is executable: `chmod +x podman/launch-claude-container.sh`
+- **Permission issues:** Verify launch script is executable: `chmod +x podman/launch-claude-container.py`
 - **Container rebuild:** Delete existing image to force rebuild: `podman rmi claude-code-ubuntu`
-- **jq dependency:** Launch script requires `jq` for configuration merging
+- **Python dependencies:** Launch script uses `uv` for dependency management
 - **Git repository required:** Worktree functionality requires running from within a git repository
 - **Worktree creation fails:** Falls back to mounting current directory if worktree creation fails
 - **Branch not found:** Verify branch/commit exists when using `--worktree-branch`
@@ -193,6 +195,13 @@ The container is automatically built when:
 - Image doesn't exist
 - Dockerfile is newer than existing image
 - Build includes user-specific UID/GID and username
+
+### Python Script Features
+The Python launcher script provides:
+- **uv dependency management**: Automatic package installation with inline script dependencies
+- **Type hints**: Full type safety for better code maintainability
+- **Better error handling**: More detailed error messages and graceful failures
+- **Cross-platform compatibility**: Works on any system with Python 3.8+ and uv
 
 ### Security Considerations
 - Non-root user execution inside container
@@ -211,15 +220,16 @@ For single-file deployment without external dependencies, use the Makefile to ge
 make build
 
 # Deploy the single file anywhere
-cp launch-claude-container-standalone.sh /path/to/deployment/
+cp launch-claude-container-standalone.py /path/to/deployment/
 cd /path/to/deployment/
-./launch-claude-container-standalone.sh
+./launch-claude-container-standalone.py
 ```
 
-The standalone script embeds both the Dockerfile and configuration template, making it completely self-contained. This is ideal for:
+The standalone Python script embeds both the Dockerfile and configuration template, making it completely self-contained. This is ideal for:
 - Deployment to servers without the full repository
 - Sharing with team members who only need the container
 - CI/CD pipelines that require minimal dependencies
+- Environments where only Python and `uv` are available
 
 ### Build System Commands
 
@@ -257,11 +267,11 @@ To rebuild the container with updates:
 
 ```bash
 # Option 1: Use --no-cache flag (recommended)
-./podman/launch-claude-container.sh --no-cache
+./podman/launch-claude-container.py --no-cache
 
 # Option 2: Manual rebuild
 podman rmi claude-code-ubuntu
-./podman/launch-claude-container.sh
+./podman/launch-claude-container.py
 ```
 
 ### Using with Different Projects
@@ -270,11 +280,11 @@ The container mounts your current working directory, so you can use it with any 
 ```bash
 cd /path/to/your/project
 
-# Using original script
-/path/to/claude-container/podman/launch-claude-container.sh
+# Using original Python script
+/path/to/claude-container/podman/launch-claude-container.py
 
 # Using standalone script (can be deployed anywhere)
-/path/to/launch-claude-container-standalone.sh
+/path/to/launch-claude-container-standalone.py
 ```
 
 ---
