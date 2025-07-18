@@ -85,17 +85,12 @@ WORKTREE_PATH=""
 WORKTREE_BRANCH=""
 KEEP_WORKTREE=false
 CLEANUP_WORKTREE=true
+WORKTREE_CREATED=false
 
-# Function to generate unique worktree name
-generate_worktree_name() {
-    local timestamp=$(date +%Y%m%d_%H%M%S)
-    echo "claude-worktree-${timestamp}-$$"
-}
 
 # Function to create git worktree
 create_worktree() {
-    local worktree_name="$1"
-    local branch_or_commit="${2:-HEAD}"
+    local branch_or_commit="${1:-HEAD}"
     
     # Check if we're in a git repository
     if ! git rev-parse --git-dir >/dev/null 2>&1; then
@@ -103,32 +98,28 @@ create_worktree() {
         exit 1
     fi
     
-    # Create worktree in system temp directory
-    local temp_dir=$(mktemp -d)
-    local worktree_path="$temp_dir/$worktree_name"
+    # Create worktree with standard naming
+    local worktree_path="$CWD/claude_wt"
     
-    echo -e "${GREEN}Creating git worktree '$worktree_name' from '$branch_or_commit'...${NC}" >&2
+    echo -e "${GREEN}Creating git worktree 'claude_wt' from '$branch_or_commit'...${NC}" >&2
     
-    if git worktree add "$worktree_path" "$branch_or_commit" >/dev/null 2>&1; then
+    if git worktree add -b claude_wt wt_temp/ >/dev/null 2>&1; then
         echo -e "${BLUE}Worktree created at: $worktree_path${NC}" >&2
+        WORKTREE_CREATED=true
         echo "$worktree_path"
     else
         echo -e "${YELLOW}Failed to create worktree. Using current directory instead.${NC}" >&2
-        rm -rf "$temp_dir"
         echo "$CWD"
     fi
 }
 
 # Function to cleanup worktree
 cleanup_worktree() {
-    if [ -n "$WORKTREE_PATH" ] && [ "$CLEANUP_WORKTREE" = true ]; then
+    if [ -n "$WORKTREE_PATH" ] && [ "$CLEANUP_WORKTREE" = true ] && [ "$WORKTREE_CREATED" = true ]; then
         echo -e "${GREEN}Cleaning up worktree...${NC}"
         if git worktree list --porcelain | grep -q "$WORKTREE_PATH"; then
             git worktree remove "$WORKTREE_PATH" --force >/dev/null 2>&1 || true
         fi
-        # Also clean up the temp directory
-        local temp_dir=$(dirname "$WORKTREE_PATH")
-        rm -rf "$temp_dir" 2>/dev/null || true
     fi
 }
 
@@ -147,6 +138,22 @@ echo -e "${BLUE}Claude Code Container Launcher${NC}"
 if [ ! -f "$DOCKERFILE" ]; then
     echo -e "${YELLOW}Warning: $DOCKERFILE not found in script directory${NC}"
     exit 1
+fi
+
+# Setup working directory (worktree or current directory) BEFORE building container
+MOUNT_PATH="$CWD"
+if [ "$USE_WORKTREE" = true ]; then
+    if [ -n "$WORKTREE_PATH" ] && [ -d "$WORKTREE_PATH" ]; then
+        # Use existing worktree path
+        echo -e "${BLUE}Using existing worktree at: $WORKTREE_PATH${NC}"
+        MOUNT_PATH="$WORKTREE_PATH"
+    else
+        # Create new worktree
+        WORKTREE_PATH=$(create_worktree "$WORKTREE_BRANCH")
+        MOUNT_PATH="$WORKTREE_PATH"
+    fi
+else
+    echo -e "${BLUE}Using current directory (no worktree)${NC}"
 fi
 
 # Prepare Claude configuration files
@@ -194,23 +201,6 @@ fi
 # Clean up temporary files
 echo -e "${GREEN}Cleaning up temporary files...${NC}"
 rm -f "$SCRIPT_DIR/.credentials.json" "$SCRIPT_DIR/.claude.json"
-
-# Setup working directory (worktree or current directory)
-MOUNT_PATH="$CWD"
-if [ "$USE_WORKTREE" = true ]; then
-    if [ -n "$WORKTREE_PATH" ] && [ -d "$WORKTREE_PATH" ]; then
-        # Use existing worktree path
-        echo -e "${BLUE}Using existing worktree at: $WORKTREE_PATH${NC}"
-        MOUNT_PATH="$WORKTREE_PATH"
-    else
-        # Create new worktree
-        WORKTREE_NAME=$(generate_worktree_name)
-        WORKTREE_PATH=$(create_worktree "$WORKTREE_NAME" "$WORKTREE_BRANCH")
-        MOUNT_PATH="$WORKTREE_PATH"
-    fi
-else
-    echo -e "${BLUE}Using current directory (no worktree)${NC}"
-fi
 
 # Stop and remove existing container if running
 if podman container exists "$CONTAINER_NAME"; then
@@ -264,3 +254,42 @@ else
 fi
 
 echo -e "${GREEN}Container stopped${NC}"
+
+# Post-container git operations for worktree
+if [ "$USE_WORKTREE" = true ] && [ "$WORKTREE_CREATED" = true ] && [ -d "$WORKTREE_PATH" ]; then
+    echo -e "${GREEN}Processing worktree changes...${NC}"
+    
+    # Change to worktree directory
+    if cd "$WORKTREE_PATH"; then
+        # Check if there are any changes to commit
+        if ! git diff --quiet || ! git diff --cached --quiet || [ -n "$(git ls-files --others --exclude-standard)" ]; then
+            echo -e "${BLUE}Changes detected in worktree, committing and pushing...${NC}"
+            
+            # Add all changes
+            git add -A
+            
+            # Commit with timestamp
+            COMMIT_MSG="chore: claude code container changes $(date '+%Y-%m-%d %H:%M:%S')"
+            git commit -m "$COMMIT_MSG"
+            
+            # Get the current branch name
+            CURRENT_BRANCH=$(git branch --show-current)
+            
+            # Push to remote, creating the branch if it doesn't exist
+            if git push origin "$CURRENT_BRANCH" 2>/dev/null; then
+                echo -e "${GREEN}Changes pushed to origin/$CURRENT_BRANCH${NC}"
+            elif git push --set-upstream origin "$CURRENT_BRANCH" 2>/dev/null; then
+                echo -e "${GREEN}New branch created and pushed to origin/$CURRENT_BRANCH${NC}"
+            else
+                echo -e "${YELLOW}Warning: Failed to push changes to remote${NC}" >&2
+            fi
+        else
+            echo -e "${BLUE}No changes detected in worktree${NC}"
+        fi
+        
+        # Return to original directory
+        cd "$CWD"
+    else
+        echo -e "${YELLOW}Warning: Could not access worktree directory${NC}" >&2
+    fi
+fi
