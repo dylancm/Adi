@@ -1,16 +1,73 @@
+# Claude Code Container Setup & Architect CLI Project
+
 # Claude Code settings directory (should not be in workspace)
 .claude/
+
+# Environment variables and secrets
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# uv
+.uv/
+uv.lock
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# IDE settings
+.vscode/
+*.code-workspace
+.idea/
+*.swp
+*.swo
+*~
 
 # Temporary files
 *.tmp
 *.temp
+.DS_Store
+Thumbs.db
 
-# vscode settings
-.vscode/
-*.code-workspace
+# Container/Podman files
+.credentials.json
+*.log
 
-# Ignore all files in the specs directory
-specs/*
-specs
+# Generated architect CLI output (optional - remove if you want to track specs)
+specs/
 
-.env
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
