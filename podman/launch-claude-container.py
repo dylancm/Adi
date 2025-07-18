@@ -49,6 +49,11 @@ class ClaudeContainerLauncher:
         self.worktree_path: Optional[Path] = None
         self.worktree_created = False
         self.cleanup_worktree = True
+        self.worktree_dir = "wt_temp"
+        
+        # Generate unique identifiers for this session
+        self.timestamp = time.strftime("%Y%m%d_%H%M%S")
+        self.unique_branch = f"claude_wt_{self.timestamp}"
 
     def parse_args(self) -> argparse.Namespace:
         parser = argparse.ArgumentParser(
@@ -86,6 +91,11 @@ class ClaudeContainerLauncher:
             type=Path,
             help="Use existing worktree at specified path"
         )
+        parser.add_argument(
+            "--worktree-dir",
+            default="wt_temp",
+            help="Directory name for new worktree (default: wt_temp)"
+        )
         return parser.parse_args()
 
     def print_colored(self, message: str, color: str = Colors.NC) -> None:
@@ -116,13 +126,13 @@ class ClaudeContainerLauncher:
             )
             sys.exit(1)
         
-        worktree_path = self.cwd / "claude_wt"
-        
-        self.print_colored(f"Creating git worktree 'claude_wt' from '{branch_or_commit}'...", Colors.GREEN)
-        
+        worktree_path = self.cwd / self.worktree_dir
+
+        self.print_colored(f"Creating git worktree '{self.unique_branch}' from '{branch_or_commit}' at {worktree_path}...", Colors.GREEN)
+
         try:
             subprocess.run(
-                ["git", "worktree", "add", "-b", "claude_wt", "wt_temp/"],
+                ["git", "worktree", "add", "-b", self.unique_branch, f"{self.worktree_dir}/"],
                 check=True,
                 capture_output=True
             )
@@ -407,6 +417,12 @@ class ClaudeContainerLauncher:
         # Set up cleanup behavior
         if args.keep_worktree:
             self.cleanup_worktree = False
+        
+        # Set worktree directory name (make it unique)
+        if args.worktree_dir:
+            self.worktree_dir = f"{args.worktree_dir}_{self.timestamp}"
+        else:
+            self.worktree_dir = f"wt_temp_{self.timestamp}"
         
         # Setup working directory
         mount_path = self.cwd
