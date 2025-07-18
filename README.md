@@ -31,7 +31,11 @@ This repository also includes the **Architect CLI Tool** - a simple CLI tool tha
 
 2. **Run the container:**
    ```bash
+   # Using the original script (requires the podman/ directory)
    ./podman/launch-claude-container.sh
+   
+   # OR using the standalone script (single file deployment)
+   ./launch-claude-container-standalone.sh
    ```
 
 3. **Inside the container, start Claude Code:**
@@ -42,6 +46,8 @@ This repository also includes the **Architect CLI Tool** - a simple CLI tool tha
 4. **Or run with a direct message:**
    ```bash
    ./podman/launch-claude-container.sh -m "your message here"
+   # OR with standalone script
+   ./launch-claude-container-standalone.sh -m "your message here"
    ```
 
 ## Authentication Details
@@ -85,6 +91,8 @@ The container supports multiple authentication methods with automatic credential
 │   ├── claude-code-ubuntu.dockerfile    # Container definition
 │   ├── launch-claude-container.sh       # Launch script with config merge
 │   └── claude.template.json             # Default container settings
+├── Makefile                             # Build system for standalone script
+├── launch-claude-container-standalone.sh # Single deployable script (generated)
 ├── CLAUDE.md                            # Project guidance for Claude Code
 └── README.md                            # This file
 ```
@@ -160,6 +168,40 @@ The container is automatically built when:
 - Temporary configuration files cleaned up after build
 - User namespace mapping for proper file permissions
 
+## Deployment Options
+
+### Standalone Script Generation
+
+For single-file deployment without external dependencies, use the Makefile to generate a standalone script:
+
+```bash
+# Generate the standalone script
+make build
+
+# Deploy the single file anywhere
+cp launch-claude-container-standalone.sh /path/to/deployment/
+cd /path/to/deployment/
+./launch-claude-container-standalone.sh
+```
+
+The standalone script embeds both the Dockerfile and configuration template, making it completely self-contained. This is ideal for:
+- Deployment to servers without the full repository
+- Sharing with team members who only need the container
+- CI/CD pipelines that require minimal dependencies
+
+### Build System Commands
+
+```bash
+# Generate standalone script
+make build
+
+# Clean generated files
+make clean
+
+# Show available targets
+make help
+```
+
 ## Advanced Usage
 
 ### Custom Configuration
@@ -195,7 +237,12 @@ The container mounts your current working directory, so you can use it with any 
 
 ```bash
 cd /path/to/your/project
+
+# Using original script
 /path/to/claude-container/podman/launch-claude-container.sh
+
+# Using standalone script (can be deployed anywhere)
+/path/to/launch-claude-container-standalone.sh
 ```
 
 ---

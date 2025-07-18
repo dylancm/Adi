@@ -60,8 +60,9 @@ Thumbs.db
 .credentials.json
 *.log
 
-# Generated architect CLI output (optional - remove if you want to track specs)
+# Generated project files
 specs/
+launch-claude-container-standalone.sh
 
 # OS generated files
 .DS_Store
