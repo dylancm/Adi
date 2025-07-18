@@ -62,7 +62,7 @@ Thumbs.db
 
 # Generated project files
 specs/
-launch-claude-container-standalone.sh
+launch-claude-container-standalone.*
 
 # OS generated files
 .DS_Store
