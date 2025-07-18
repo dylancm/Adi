@@ -11,10 +11,12 @@ This repository also includes the **Architect CLI Tool** - a simple CLI tool tha
 - **Pre-configured**: Dark theme, optimized settings, and MCP servers ready out-of-the-box
 - **Zero Setup**: No need to install Node.js, npm, or manage Claude Code versions manually
 - **Secure**: Credentials are safely handled with proper permission management
+- **Git Worktree Integration**: Automatically creates isolated git worktrees for safe development
 
 ## Prerequisites
 
 - **Podman**: Ensure Podman is installed and running
+- **Git Repository**: Must be run from within a git repository for worktree functionality
 - **jq**: Required for configuration merging (`apt install jq` on Ubuntu/Debian)
 - **Permissions**: Make sure the launch script is executable
 
@@ -110,16 +112,36 @@ The launch script performs intelligent configuration merging:
 - **Ephemeral:** Container is stopped and recreated on each launch
 - **Credential Management:** Host credentials are copied during build (not mounted)
 - **File Permissions:** Container runs with host user's UID/GID for proper file access
-- **Directory Mounting:** Current working directory is mounted to `/home/user/dev`
+- **Worktree Integration:** Automatically creates git worktrees for isolated development
+
+### Git Worktree Support
+The container now supports git worktree functionality for isolated development:
+- **Automatic Creation:** Creates a fresh git worktree from current HEAD or specified branch
+- **Isolation:** Changes in container don't affect your main working directory
+- **Branch Support:** Can create worktrees from any branch or commit
+- **Cleanup:** Worktrees are automatically cleaned up when container stops (configurable)
+- **Fallback:** Can disable worktree and mount current directory directly if needed
 
 ## Command Line Options
 
 ```bash
-# Basic usage - launches interactive Claude Code session
+# Basic usage - launches interactive Claude Code session with automatic worktree
 ./podman/launch-claude-container.sh
 
 # Run with direct message - execute single command and exit
 ./podman/launch-claude-container.sh -m "your message here"
+
+# Create worktree from specific branch
+./podman/launch-claude-container.sh --worktree-branch feature/new-feature
+
+# Mount current directory instead of creating worktree
+./podman/launch-claude-container.sh --no-worktree
+
+# Keep worktree after container stops (for persistent development)
+./podman/launch-claude-container.sh --keep-worktree
+
+# Use existing worktree at specific path
+./podman/launch-claude-container.sh --worktree-path /tmp/my-existing-worktree
 
 # Force rebuild of container image (ignores cache)
 ./podman/launch-claude-container.sh --no-cache
@@ -132,13 +154,14 @@ The launch script performs intelligent configuration merging:
 
 # Examples
 ./podman/launch-claude-container.sh -m "List all Python files in this directory"
-./podman/launch-claude-container.sh -m "Run the tests and show me the results"
-./podman/launch-claude-container.sh --permission-mode acceptEdits -m "Fix the linting errors"
-./podman/launch-claude-container.sh --no-cache -m "Analyze this codebase"
+./podman/launch-claude-container.sh --worktree-branch main -m "Run the tests and show me the results"
+./podman/launch-claude-container.sh --permission-mode acceptEdits --keep-worktree -m "Fix the linting errors"
+./podman/launch-claude-container.sh --no-worktree --no-cache -m "Analyze this codebase"
 ```
 
 ### Available Options
 
+#### Basic Options
 - `-m, --message MESSAGE` - Run Claude Code with a specific message and exit
 - `--no-cache` - Force rebuild of container image, ignoring existing cache
 - `--permission-mode MODE` - Set permission mode for Claude Code execution
@@ -148,6 +171,12 @@ The launch script performs intelligent configuration merging:
   - `bypassPermissions` - Skip all permission checks
 - `-h, --help` - Show help message and usage information
 
+#### Git Worktree Options
+- `--worktree-branch BRANCH` - Create worktree from specific branch/commit (default: current HEAD)
+- `--keep-worktree` - Keep worktree after container stops (default: cleanup automatically)
+- `--no-worktree` - Mount current directory instead of creating worktree
+- `--worktree-path PATH` - Use existing worktree at specified path
+
 ## Troubleshooting
 
 ### Common Issues
@@ -155,6 +184,9 @@ The launch script performs intelligent configuration merging:
 - **Permission issues:** Verify launch script is executable: `chmod +x podman/launch-claude-container.sh`
 - **Container rebuild:** Delete existing image to force rebuild: `podman rmi claude-code-ubuntu`
 - **jq dependency:** Launch script requires `jq` for configuration merging
+- **Git repository required:** Worktree functionality requires running from within a git repository
+- **Worktree creation fails:** Falls back to mounting current directory if worktree creation fails
+- **Branch not found:** Verify branch/commit exists when using `--worktree-branch`
 
 ### Build Process
 The container is automatically built when:
