@@ -214,12 +214,9 @@ A simple CLI tool that generates technical design documents using the Anthropic 
 
 ## Installation
 
-1. Install dependencies:
-```bash
-uv add anthropic
-```
+No installation required! The script uses uv's inline script dependencies feature.
 
-2. Make the script executable:
+Optionally, make the script executable for direct execution:
 ```bash
 chmod +x architect.py
 ```
@@ -229,7 +226,7 @@ chmod +x architect.py
 ### Basic Usage
 
 ```bash
-./architect.py -f "user authentication system with dashboard"
+uv run architect.py -f "user authentication system with dashboard"
 ```
 
 ### With API Key
@@ -237,35 +234,35 @@ chmod +x architect.py
 ```bash
 # Using environment variable (recommended)
 export ANTHROPIC_API_KEY="your-api-key-here"
-./architect.py -f "user authentication system with dashboard"
+uv run architect.py -f "user authentication system with dashboard"
 
 # Using CLI option
-./architect.py -f "user authentication system with dashboard" -k "your-api-key-here"
+uv run architect.py -f "user authentication system with dashboard" -k "your-api-key-here"
 ```
 
 ### With Technical Context
 
 ```bash
-./architect.py -f "user authentication system" -c "Python Flask app with PostgreSQL database"
+uv run architect.py -f "user authentication system" -c "Python Flask app with PostgreSQL database"
 ```
 
 ### With Existing Markdown Files
 
 ```bash
-./architect.py -f "user authentication system" -c "Python Flask app" -e existing_design.md requirements.md
+uv run architect.py -f "user authentication system" -c "Python Flask app" -e existing_design.md requirements.md
 ```
 
 ### Using File Inputs
 
 ```bash
 # Features from file
-./architect.py -f features.md -c "Python Flask app"
+uv run architect.py -f features.md -c "Python Flask app"
 
 # Context from file
-./architect.py -f "user auth system" -c technical_context.md
+uv run architect.py -f "user auth system" -c technical_context.md
 
 # Multiple existing files
-./architect.py -f features.md -c context.md -e design1.md design2.md
+uv run architect.py -f features.md -c context.md -e design1.md design2.md
 ```
 
 ## Command Line Options
@@ -289,7 +286,7 @@ Where `{slug}` is an AI-generated 1-3 word identifier for your system. The `spec
 
 ### Example 1: E-commerce System
 ```bash
-./architect.py -f "e-commerce platform with shopping cart, user accounts, and payment processing"
+uv run architect.py -f "e-commerce platform with shopping cart, user accounts, and payment processing"
 ```
 
 Output files:
@@ -298,7 +295,7 @@ Output files:
 
 ### Example 2: With Context and Existing Files
 ```bash
-./architect.py -f "blog management system" -c "Node.js with Express and MongoDB" -e current_api.md
+uv run architect.py -f "blog management system" -c "Node.js with Express and MongoDB" -e current_api.md
 ```
 
 Output files:
@@ -315,7 +312,7 @@ echo "User authentication system with OAuth2 support" > features.md
 echo "Python FastAPI application with PostgreSQL database and Redis cache" > context.md
 
 # Run the tool
-./architect.py -f features.md -c context.md
+uv run architect.py -f features.md -c context.md
 ```
 
 ## Error Handling
@@ -338,7 +335,7 @@ The tool supports two methods for providing your Anthropic API key:
 
 2. **CLI Option**:
    ```bash
-   ./architect.py -f "features" -k "your-api-key-here"
+   uv run architect.py -f "features" -k "your-api-key-here"
    ```
 
 The CLI option takes precedence over the environment variable.
@@ -350,9 +347,11 @@ The CLI option takes precedence over the environment variable.
 
 ## Requirements
 
-- Python 3.7+
-- `anthropic` Python package
+- Python 3.8+
+- uv package manager
 - Valid Anthropic API key
+
+Note: The `anthropic` package is automatically managed via uv's inline script dependencies.
 
 ## Troubleshooting
 
@@ -365,7 +364,7 @@ The CLI option takes precedence over the environment variable.
 ### Getting Help
 
 ```bash
-./architect.py -h
+uv run architect.py -h
 ```
 
 ---
