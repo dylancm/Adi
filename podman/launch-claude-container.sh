@@ -99,7 +99,7 @@ create_worktree() {
     
     # Check if we're in a git repository
     if ! git rev-parse --git-dir >/dev/null 2>&1; then
-        echo -e "${YELLOW}Error: Not in a git repository. Worktree requires a git repository.${NC}"
+        echo -e "${YELLOW}Error: Not in a git repository. Worktree requires a git repository.${NC}" >&2
         exit 1
     fi
     
@@ -107,13 +107,13 @@ create_worktree() {
     local temp_dir=$(mktemp -d)
     local worktree_path="$temp_dir/$worktree_name"
     
-    echo -e "${GREEN}Creating git worktree '$worktree_name' from '$branch_or_commit'...${NC}"
+    echo -e "${GREEN}Creating git worktree '$worktree_name' from '$branch_or_commit'...${NC}" >&2
     
     if git worktree add "$worktree_path" "$branch_or_commit" >/dev/null 2>&1; then
-        echo -e "${BLUE}Worktree created at: $worktree_path${NC}"
+        echo -e "${BLUE}Worktree created at: $worktree_path${NC}" >&2
         echo "$worktree_path"
     else
-        echo -e "${YELLOW}Failed to create worktree. Using current directory instead.${NC}"
+        echo -e "${YELLOW}Failed to create worktree. Using current directory instead.${NC}" >&2
         rm -rf "$temp_dir"
         echo "$CWD"
     fi
